@@ -11,9 +11,7 @@
 int willYouRaise( struct Game * game, struct Player * player, unsigned int totalBet )
 {
     if(player->ID == 0){
-        if(game->playersSize > 2){
-            return -1;
-        }
+        return 1;
     }
     return 0;
 }
