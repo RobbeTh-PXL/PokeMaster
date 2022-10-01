@@ -1,50 +1,178 @@
-#include "texasholdem.h"
-#include <stdio.h>
+#include <iostream>
 #include <string.h>
+#define DEBUG_PRINT
+#include "texasholdem.h"
 
-/*  willYouRaise
- *  return  0    -> Showdown (Ask players to show cards)
- *  return  1    -> Call (Increase Bet)
- *  return -1    -> Fold (Return cards to dealer, get out the round)
-*/
+enum spelerIDs
+{
+	IK,
+	JIJ,
+	HIJ,
+	ZIJ,
+	STUDENT_2022,
+	MAX_PLAYER_ID
+};
+
+bool init = false;
+int maxBetEver[MAX_PLAYER_ID];
 
 int willYouRaise( struct Game * game, struct Player * player, unsigned int totalBet )
 {
-    if(player->ID == 0){
-        return 1;
-    }
-    return 0;
+	if( !init )
+	{
+		init = true;
+		for( int i = 0 ; i < MAX_PLAYER_ID ; i++ )
+		{
+			maxBetEver[i] = 0;
+		}
+	}
+	switch( player->ID )
+	{
+	case IK:
+	{
+    PokerRank mijnHandRank = getMyHandRank( player->hand );
+		return 0;
+		break;
+	}
+	case JIJ:
+		for( int i = 0 ; i < game->playersSize ; i++ )
+		{
+			if( game->players[i]->bet > maxBetEver[game->players[i]->ID])
+			{
+				maxBetEver[game->players[i]->ID] = game->players[i]->bet;
+			}
+		}
+		if( game->amountHands > 2 )
+		{
+			return( -1 );
+		}
+		for( int i = 0 ; i < game->playersSize ; i++ )
+		{
+			if( game->players[i]->ID != JIJ && isHandFilled(game->players[i]->hand) )
+			{
+				return( maxBetEver[game->players[i]->ID] - totalBet + 1 );
+			}
+		}
+		return( -1 );
+		break;
+	case HIJ:
+		if( totalBet > 50 )
+		{
+			return( 0 );
+		}
+		return( 50 - totalBet );
+		break;
+	case ZIJ:
+	{
+		bool fold = true;
+		for( int i = 0 ; !fold && i < game->playersSize ; i++ )
+		{
+			if( game->players[i]->ID != HIJ && game->players[i]->ID != ZIJ && game->players[i]->hand->cards[0] != nullptr )
+			{
+				fold = false;
+			}
+			if( game->players[i]->ID == HIJ && game->players[i]->hand->cards[0] == nullptr )
+			{
+				fold = false;
+			}
+		}
+		if( fold )
+		{
+			return -1;
+		}
+
+		return( 0 );
+		break;
+	}
+	case STUDENT_2022:
+		PokerRank mijnHandRank = getMyHandRank( player->hand );
+		if( table[0] == nullptr ) //Pre flop
+		{
+			if( player->hand->cards[0]->suit == player->hand->cards[1]->suit )
+			{ //suited hands
+				int diffBetweenOrderedCards = mijnHandRank.hand[0]->rank - mijnHandRank.hand[1]->rank;
+				if( diffBetweenOrderedCards == 1 || diffBetweenOrderedCards == 13 )
+				{ //suited connected
+					return ( game->blind * 7 ) - totalBet; //max 7x blind and fold otherwise
+				}
+				return ( game->blind * 3 ) - totalBet; //max 3x blind and fold otherwise
+			}
+			if( player->hand->cards[0]->rank == player->hand->cards[1]->rank )
+			{ //1 pair to start
+				return ( game->blind * 5 ) - totalBet; //max 5x blind and fold otherwise
+			}
+			int diffBetweenOrderedCards = mijnHandRank.hand[0]->rank - mijnHandRank.hand[1]->rank;
+			if( diffBetweenOrderedCards == 1 || diffBetweenOrderedCards == 13 )
+			{ //unsuited connected
+				return ( game->blind * 3 ) - totalBet; //max 3x blind and fold otherwise
+			}
+			if( totalBet > game->blind * 2 )
+			{
+				return -1;
+			}
+			return 0;
+		}
+		else if( table[3] == nullptr )
+		{ //on flop
+			return 0;
+		}
+		else if( table[4] == nullptr )
+		{ //on turn
+			return 0;
+		}
+		else
+		{ //on river
+			return 0;
+		}
+		break;
+	}
+	return( 0 );
 }
 
-int main()
+int main( void )
 {
-    struct Game game;
+//INIT GAME AND DECK
+	Game game;
+	makeNewDeck( &game );
+//INIT GAME AND DECK
 
-    makeNewDeck(&game);
+//DEFINE PLAYERS
+	Player ik;
+	strcpy( ik.name, "Ikke de beste" );
+	ik.ID = IK;
 
-    struct Player speler1;
-    strcpy(speler1.name, "speler1");
-    speler1.ID = 0;
+	Player jij;
+	strcpy( jij.name, "Gijse zot" );
+	jij.ID = JIJ;
 
-    struct Player speler2;
-    strcpy(speler2.name, "speler2");
-    speler2.ID = 1;
+	Player hij;
+	strcpy( hij.name, "Hij weet niet beter" );
+	hij.ID = HIJ;
 
-    struct Player speler3;
-    strcpy(speler3.name, "speler3");
-    speler3.ID = 2;
+	Player zij;
+	strcpy( zij.name, "Zij speelt vals" );
+	zij.ID = ZIJ;
 
-    struct Player speler4;
-    strcpy(speler4.name, "speler4");
-    speler4.ID = 3;
+	Player student2022;
+	strcpy( student2022.name, "student 2022 example" );
+	student2022.ID = STUDENT_2022;
+//DEFINE PLAYERS
 
-    addPlayerToGame(&game, &speler1);
-    addPlayerToGame(&game, &speler2);
-    addPlayerToGame(&game, &speler3);
-    addPlayerToGame(&game, &speler4);
+//ADD PLAYERS
+	addPlayerToGame( &game, &ik );
+	addPlayerToGame( &game, &jij );
+	addPlayerToGame( &game, &hij );
+	addPlayerToGame( &game, &zij );
+	addPlayerToGame( &game, &student2022 );
+//ADD PLAYERS
 
+//RUN GAME
+	playGame( &game, 1 );
+//RUN GAME
 
-    playGame(&game, 1);
-    printf("The winner is %s with %d chips !", game.players[0]->name, game.players[0]->chips);
-    return 0;
+//PRINT WINNER
+	printf( "The winner is %s with %d chips !", game.players[0]->name, game.players[0]->chips );
+//PRINT WINNER
+
+	return 0;
 }
