@@ -31,6 +31,17 @@ int willYouRaise( struct Game * game, struct Player * player, unsigned int total
 	case IK:
 	{
     PokerRank mijnHandRank = getMyHandRank( player->hand );
+		for (int i = 0 ; i < game->playersSize ; i++) {
+			if (game->players[i]->ID == HIJ) {
+				return -1;
+			}
+			if (game->players[i]->hand->cards[0] == nullptr) {
+				return 0;
+			}
+		}
+		if (player->hand->cards[0]->rank == player->hand->cards[1]->rank) {
+			return (game->blind * 4) - totalBet;
+		}
 		return 0;
 		break;
 	}
